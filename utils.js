@@ -15,7 +15,7 @@ function parseIni(rawtxt) {
 
 		const match = trimmed.match(reg);
 		if (match)
-			result[match[i]] = match[2].trim();
+			result[match[1]] = match[2].trim();
 	}
 	return result
 }

@@ -32,7 +32,7 @@ class AutoBatchWatermark {
     } catch (err) {
       console.log(`> 未找到源文档：${pdf_path}`);
       console.log('> 初始化失败');
-      return;
+      process.exit(0);
     }
 
     try {
@@ -40,7 +40,7 @@ class AutoBatchWatermark {
     } catch (err) {
       console.log(`> 读取时遇到错误：${err}`);
       console.log('> 初始化失败');
-      return;
+      process.exit(0);
     }
     console.log('> 成功读取源文档');
 
@@ -50,7 +50,7 @@ class AutoBatchWatermark {
     } catch (err) {
       console.log(`> 未找到水印列表：${wm_txt_path}`);
       console.log('> 初始化失败');
-      return;
+      process.exit(0);
     }
 
     try {
@@ -120,8 +120,19 @@ class AutoBatchWatermark {
   }
 }
 
+let raw_cfg = '';
+console.log('> 正在读取配置文件');
+try {
+  raw_cfg = fs.readFileSync('./config.cfg').toString();
+} catch (err) {
+  console.log('> 读取配置文件失败');
+  process.exit(0);
+}
+
+const { src_pdf_path, wm_list_path } = parseIni(raw_cfg);
+
 const run = async () => {
-  let abw = new AutoBatchWatermark('./教育学.pdf', './一期班名单.txt', {
+  let abw = new AutoBatchWatermark(src_pdf_path, wm_list_path, {
     fontFamily: 'SimSun',
     fontSize: 108,
     fontWeight: 'normal',

@@ -4,6 +4,9 @@ import { FabricText, StaticCanvas } from 'fabric/node';
 import { PDFDocument } from 'pdf-lib';
 
 import { parseIni } from './utils.js';
+import { registerFont } from 'canvas';
+
+registerFont('./fonts/simsun.ttc', { family: 'SimSun' });
 
 class AutoBatchWatermark {
   pdf_path = '';
@@ -112,15 +115,16 @@ class AutoBatchWatermark {
 
       const pdf_buf = await pdf_doc.save();
       fs.writeFileSync(`./${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${txt_str}.pdf`, pdf_buf);
-      console.log(`> 成功生成带水印的 PDF: ./${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${txt_str}.pdf`);
+      console.log(`> 成功生成带水印的 PDF: ${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${txt_str}.pdf`);
     }
   }
 }
 
 const run = async () => {
   let abw = new AutoBatchWatermark('./教育学.pdf', './一期班名单.txt', {
-    fontFamily: '"宋体"',
+    fontFamily: 'SimSun',
     fontSize: 108,
+    fontWeight: 'normal',
     fill: 'rgba(180, 180, 180, 0.4)',
     angle: -30,
     originX: 'center',

@@ -6,11 +6,16 @@ import { PDFDocument } from 'pdf-lib';
 import { parseIni } from './utils.js';
 import { registerFont } from 'canvas';
 
+// 获取当前文件在虚拟文件系统（或本地）的绝对路径
+const __dirname = './';
 registerFont('./fonts/simsun.ttc', { family: 'SimSun' });
 
 class AutoBatchWatermark {
   pdf_path = '';
   pdf_buffer = null;
+  /**
+   * @type {string[]}
+   */
   wm_txt_list = null;
   /**
    * @type {import('fabric').TextProps}
@@ -84,15 +89,27 @@ class AutoBatchWatermark {
     return Buffer.from(data_url.replace(/^data:image\/png;base64,/, ''), 'base64');
   }
 
-  async addWmToPDF() {
+  async addWmToPDF(year_prev, backup) {
     if (this.wm_txt_list?.length == 0) return;
 
     console.log(`> 正在加载源 PDF`);
     const src_pdf_doc = await PDFDocument.load(this.pdf_buffer);
 
     for (const txt_str of this.wm_txt_list) {
-      console.log(`> 正在生成水印图片：${txt_str}`);
-      const wm_buffer = await this.generateFabricWm(txt_str);
+      if(txt_str == undefined || txt_str.trim().length == 0) continue;
+      
+      console.log(`> 正在处理水印文字`);
+      let wm_str = '', nameonly = '';
+      if (year_prev !== '0') wm_str = year_prev;
+      for (let i = 0; i < txt_str.length; i++) {
+        if ('0' <= txt_str[i] && txt_str[i] <= '9') continue;
+        nameonly = txt_str.slice(i);
+        break;
+      }
+      wm_str += nameonly;
+      if (backup === '1') wm_str += '上岸';
+      console.log(`> 正在生成水印图片：${wm_str}`);
+      const wm_buffer = await this.generateFabricWm(wm_str);
 
       console.log(`> 正在将水印添加至文档`);
       const pdf_doc = await src_pdf_doc.copy();
@@ -114,8 +131,8 @@ class AutoBatchWatermark {
       }
 
       const pdf_buf = await pdf_doc.save();
-      fs.writeFileSync(`./${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${txt_str}.pdf`, pdf_buf);
-      console.log(`> 成功生成带水印的 PDF: ${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${txt_str}.pdf`);
+      fs.writeFileSync(`./${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${nameonly}.pdf`, pdf_buf);
+      console.log(`> 成功生成带水印的 PDF: ${this.pdf_path.slice(0, this.pdf_path.length - 4)}-${nameonly}.pdf`);
     }
   }
 }
@@ -123,13 +140,13 @@ class AutoBatchWatermark {
 let raw_cfg = '';
 console.log('> 正在读取配置文件');
 try {
-  raw_cfg = fs.readFileSync('./config.cfg').toString();
+  raw_cfg = fs.readFileSync(__dirname + 'config.cfg').toString();
 } catch (err) {
   console.log('> 读取配置文件失败');
   process.exit(0);
 }
 
-const { src_pdf_path, wm_list_path } = parseIni(raw_cfg);
+const { src_pdf_path, wm_list_path, year_prev, backup } = parseIni(raw_cfg);
 
 const run = async () => {
   let abw = new AutoBatchWatermark(src_pdf_path, wm_list_path, {
@@ -144,7 +161,7 @@ const run = async () => {
     top: 1000 / 2,
   });
 
-  abw.addWmToPDF();
+  abw.addWmToPDF(year_prev, backup);
 };
 
 run();
